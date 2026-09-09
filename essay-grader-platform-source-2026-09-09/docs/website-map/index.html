@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1920px; height:1080px; overflow:hidden; }
+  body { font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:#eef3fa; color:#1e293b; }
+  .wrap { width:1920px; height:1080px; padding:34px 58px 26px; display:flex; flex-direction:column; }
+
+  /* ---------- 顶部根节点横幅 ---------- */
+  .hero { background:linear-gradient(120deg,#12295c 0%,#1a407c 45%,#1d6fe8 100%); border-radius:20px; padding:0 44px; height:132px; display:flex; align-items:center; gap:30px; color:#fff; box-shadow:0 10px 24px rgba(26,64,124,.28); position:relative; flex:none; }
+  .hero .seal { width:86px; height:86px; border-radius:18px; background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.35); display:flex; align-items:center; justify-content:center; font-size:40px; }
+  .hero h1 { font-size:46px; font-weight:700; letter-spacing:1px; }
+  .hero .en { font-size:16px; color:#cfe0ff; margin-top:2px; letter-spacing:2px; }
+  .hero .desc { font-size:18px; color:#e8f0ff; margin-top:10px; line-height:1.5; }
+  .hero .flow { margin-left:auto; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:999px; padding:12px 24px; font-size:17px; }
+  .hero .flow b { font-weight:600; }
+  .hero .arrow { color:#ffd76a; font-size:19px; }
+
+  /* ---------- 连线层 ---------- */
+  .links { height:42px; flex:none; position:relative; }
+  .links svg { position:absolute; inset:0; width:100%; height:100%; }
+
+  /* ---------- 六大模块网格 ---------- */
+  .grid { flex:1; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr; gap:22px; min-height:0; }
+  .card { background:#fff; border-radius:16px; border:1px solid #dfe7f2; box-shadow:0 6px 16px rgba(30,58,95,.07); padding:15px 18px 13px; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+  .card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:6px; }
+  .card.c1::before{background:#1d6fe8} .card.c2::before{background:#0ea5e9} .card.c3::before{background:#7c3aed}
+  .card.c4::before{background:#16a34a} .card.c5::before{background:#d97706} .card.c6::before{background:#db2777}
+  .core::after { content:"核心"; position:absolute; top:12px; right:0; background:linear-gradient(90deg,#f59e0b,#ef6c00); color:#fff; font-size:12.5px; font-weight:600; padding:3px 12px 3px 14px; border-radius:999px 0 0 999px; }
+  .card .head { display:flex; align-items:center; gap:12px; }
+  .card .no { font-size:13.5px; font-weight:700; color:#94a3b8; letter-spacing:1px; }
+  .card .icon { width:44px; height:44px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; }
+  .c1 .icon{background:#e8f1ff} .c2 .icon{background:#e0f4ff} .c3 .icon{background:#f0e9ff} .c4 .icon{background:#e4f6ea} .c5 .icon{background:#fff3e0} .c6 .icon{background:#fde8f0}
+  .card .t { font-size:24px; font-weight:700; color:#0f2547; }
+  .card .sub { font-size:14.5px; color:#64748b; margin-top:2px; }
+  .card ul { list-style:none; margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .card li { display:flex; gap:8px; font-size:17px; line-height:1.36; color:#334155; }
+  .card li .dot { color:#1d6fe8; font-weight:700; flex:none; }
+  .card li b { color:#0f2547; font-weight:600; }
+  .card li .tag { display:inline-block; background:#eef4ff; color:#1d6fe8; font-size:13px; padding:1px 7px; border-radius:6px; margin-left:4px; font-weight:500; }
+
+  /* ---------- 底部技术底座 ---------- */
+  .tech { flex:none; margin-top:18px; background:#0f2547; border-radius:16px; padding:13px 28px; display:flex; align-items:center; gap:26px; color:#dbe7fb; }
+  .tech .tt { font-size:16.5px; font-weight:700; color:#fff; white-space:nowrap; display:flex; align-items:center; gap:9px; }
+  .tech .item { font-size:15.5px; line-height:1.35; border-left:1px solid rgba(255,255,255,.16); padding-left:22px; }
+  .tech .item b { color:#ffd76a; font-weight:600; }
+  .tech .sep { color:#5b7bb0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 根节点 -->
+  <div class="hero">
+    <div class="seal">✍️</div>
+    <div>
+      <h1>议论文智批系统</h1>
+      <div class="en">Essay Grader Platform · 议论文智能批改与教学辅助系统（功能框架）</div>
+      <div class="desc">面向中学语文教师的一站式教学辅助平台 —— 覆盖「智能出题 → 深度批改 → 学情跟进 → 教学资源」全流程</div>
+    </div>
+    <div class="flow"><b>核心工作流</b><span class="arrow">→</span>AI 初筛批改<span class="arrow">→</span>教师复核·终审<span class="arrow">→</span>结果沉淀与学情分析</div>
+  </div>
+
+  <!-- 连线：根 → 六大模块 -->
+  <div class="links">
+    <svg viewBox="0 0 1804 42" preserveAspectRatio="none">
+      <path d="M902 0 V16 H150 V34" stroke="#9db9e8" stroke-width="2" fill="none"/>
+      <path d="M902 0 V16 H451 V34" stroke="#9db9e8" stroke-width="2" fill="none"/>
+      <path d="M902 0 V16 H752 V34" stroke="#9db9e8" stroke-width="2" fill="none"/>
+      <path d="M902 0 V16 H1052 V34" stroke="#9db9e8" stroke-width="2" fill="none"/>
+      <path d="M902 0 V16 H1353 V34" stroke="#9db9e8" stroke-width="2" fill="none"/>
+      <path d="M902 0 V16 H1654 V34" stroke="#9db9e8" stroke-width="2" fill="none"/>
+      <path d="M902 16 H1654" stroke="#9db9e8" stroke-width="2"/>
+      <path d="M902 16 H150" stroke="#9db9e8" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <!-- 六大模块 -->
+  <div class="grid">
+    <!-- 1 工作台总览 -->
+    <div class="card c1">
+      <div class="head"><div class="icon">📊</div><div><div class="no">01 · WORKBENCH</div><div class="t">工作台总览</div><div class="sub">教师日常批改入口 · 全局数据驾驶舱</div></div></div>
+      <ul>
+        <li><span class="dot">▪</span><span><b>复核任务流</b>：待复核 / 已复核 一目了然</span></li>
+        <li><span class="dot">▪</span><span><b>批改统计</b>：得分分布、批改量趋势</span></li>
+        <li><span class="dot">▪</span><span><b>高频错误标签</b>：快速定位教学薄弱点</span></li>
+      </ul>
+    </div>
+    <!-- 2 班级管理 -->
+    <div class="card c2">
+      <div class="head"><div class="icon">👥</div><div><div class="no">02 · CLASS</div><div class="t">班级管理</div><div class="sub">班级 · 学情 · 个性化 三合一</div></div></div>
+      <ul>
+        <li><span class="dot">▪</span><span><b>班级与学生</b>：建班 / 批量导入学生</span></li>
+        <li><span class="dot">▪</span><span><b>班级学情报告</b>：平均分 · 批改次数 · 薄弱点</span></li>
+        <li><span class="dot">▪</span><span><b>错题本与个性化</b>：个人错题 · 学习路径</span></li>
+      </ul>
+    </div>
+    <!-- 3 智能出题中心 -->
+    <div class="card c3 core">
+      <div class="head"><div class="icon">🧠</div><div><div class="no">03 · QUESTION BANK</div><div class="t">智能出题中心</div><div class="sub">真题 / 模拟卷 + AI 生成 一体化题库</div></div></div>
+      <ul>
+        <li><span class="dot">▪</span><span><b>查找题库</b>：高考真题 + 模拟卷 合并查询<span class="tag">省份/年份/考试类别/话题/思辨类型</span></span></li>
+        <li><span class="dot">▪</span><span><b>模仿出题</b>：以某题为蓝本，模仿/替换<b>话题</b>与<b>思辨类型</b>生成新题</span></li>
+        <li><span class="dot">▪</span><span><b>自定义出题</b>：输入材料 / 想法，AI 生成完整作文题</span></li>
+        <li><span class="dot">▪</span><span><b>我的题库</b>：收藏 / 保存 / 批量导入 / 分类管理</span></li>
+      </ul>
+    </div>
+    <!-- 4 批改工作台 -->
+    <div class="card c4 core">
+      <div class="head"><div class="icon">🖊️</div><div><div class="no">04 · GRADING</div><div class="t">批改工作台</div><div class="sub">议论文深度批改 —— 逻辑拆解 + 论据核验</div></div></div>
+      <ul>
+        <li><span class="dot">▪</span><span><b>结构拆解</b>：引论 / 本论 / 结论 骨架 + 异常标红</span></li>
+        <li><span class="dot">▪</span><span><b>逻辑分析</b>：偷换概念 · 论据偏离 · 循环论证 等谬误识别</span></li>
+        <li><span class="dot">▪</span><span><b>论据核验</b>：事实核查 → 正确 / 存疑 / 有误</span></li>
+        <li><span class="dot">▪</span><span><b>评分与评语</b>：内容40·表达40·发展20 + 雷达图 + 逐句建议</span></li>
+      </ul>
+    </div>
+    <!-- 5 写作框架辅助 -->
+    <div class="card c5">
+      <div class="head"><div class="icon">💡</div><div><div class="no">05 · SCAFFOLD</div><div class="t">写作框架辅助</div><div class="sub">写前脚手架 · 降低构思门槛</div></div></div>
+      <ul>
+        <li><span class="dot">▪</span><span><b>按题生成框架</b>：开头 → 分论点 → 结尾</span></li>
+        <li><span class="dot">▪</span><span><b>要素建议</b>：核心品质 · 适用素材 提示</span></li>
+        <li><span class="dot">▪</span><span>与题库 / 素材库联动，随取随用</span></li>
+      </ul>
+    </div>
+    <!-- 6 素材库 -->
+    <div class="card c6">
+      <div class="head"><div class="icon">📚</div><div><div class="no">06 · MATERIALS</div><div class="t">素材库</div><div class="sub">白名单素材 · 支撑论据核验</div></div></div>
+      <ul>
+        <li><span class="dot">▪</span><span><b>四大类素材</b>：人物 / 事件 / 名言 / 数据</span></li>
+        <li><span class="dot">▪</span><span><b>来源核验</b>：来源标注 · 白名单 · 待核验状态</span></li>
+        <li><span class="dot">▪</span><span>按<b>思辨维度</b>组织，批改 / 支架随取随用</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 技术底座 -->
+  <div class="tech">
+    <div class="tt">⚙️ 技术底座</div>
+    <div class="item"><b>前端</b>：React 18 · TypeScript · Tailwind CSS · Vite</div>
+    <div class="item"><b>后端</b>：Node.js · Express · TypeScript REST API</div>
+    <div class="item"><b>AI 引擎</b>：DeepSeek 真实模型 <span class="sep">/</span> 本地 Mock 演示 双模式</div>
+    <div class="item"><b>数据</b>：JSON 文件存储（可平滑迁移 PostgreSQL）</div>
+  </div>
+</div>
+</body>
+</html>

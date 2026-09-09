@@ -1,0 +1,15 @@
+[36520:42868:0905/210313.087:WARNING:chrome\browser\extensions\activity_log\activity_log_policy.cc:71] Scheduling init
+[36520:42868:0905/210313.087:WARNING:chrome\browser\extensions\activity_log\activity_log_policy.cc:71] Scheduling init
+[36520:38716:0905/210313.501:INFO:chrome\common\importer\edge_chrome_importer_utils_win.cc:34] Google chrome user data path not found.
+[36520:38716:0905/210313.506:ERROR:chrome\browser\importer\edge_china_browsers\edge_qqbrowser_importer_utils_win.cc:165] QQBrowser user data path not found.
+[36520:42868:0905/210313.643:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.675:INFO:CONSOLE:5094] "[ProtocolLaunch] handler constructed; wiring port events.", source: chrome-extension://ndcpkimcihhghdcddljkfmmjccdmcmof/background.rollup.js (5094)
+[36520:42868:0905/210313.687:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.690:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.693:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.693:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.698:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.698:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.702:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized
+[36520:42868:0905/210313.734:INFO:CONSOLE:0] "[DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://www.chromium.org/developers/design-documents/create-amazing-password-forms)", source: http://localhost:4000/login (0)
+[36520:42868:0905/210313.742:WARNING:chrome\browser\edge_pinned_sites\pinned_sites_cache.cc:238] Cache isn't initialized

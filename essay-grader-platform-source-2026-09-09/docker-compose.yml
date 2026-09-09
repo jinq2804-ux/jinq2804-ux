@@ -1,0 +1,39 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: essay
+      POSTGRES_PASSWORD: essay123
+      POSTGRES_DB: essay_grader
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U essay -d essay_grader"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+      # 接入真实 AI：填入 DeepSeek Key 后重启（可选）
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      AI_MODE: ${AI_MODE:-auto}
+      ENABLE_WEB_SEARCH: ${ENABLE_WEB_SEARCH:-false}
+    volumes:
+      # MVP 数据持久化（JSON 文件）；迁移 PostgreSQL 后可移除
+      - appdata:/app/server/data
+
+volumes:
+  pgdata:
+  appdata:
