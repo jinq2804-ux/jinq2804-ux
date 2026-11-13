@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "议论文智能批改与教学辅助系统 (P0 MVP)",
-  "engines": { "node": ">=22.6" },
+  "engines": { "node": "24.x" },
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "start": "node --env-file=.env server/src/index.ts",
