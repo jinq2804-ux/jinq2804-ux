@@ -4,11 +4,12 @@
   "private": true,
   "description": "议论文智能批改与教学辅助系统 (P0 MVP)",
   "engines": { "node": "24.x" },
+  "workspaces": ["server", "client"],
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "start": "node --env-file=.env server/src/index.ts",
-    "build": "pnpm --dir client build",
-    "typecheck": "pnpm --dir server typecheck",
+    "start": "node server/src/index.ts",
+    "build": "npm run build --workspace client",
+    "typecheck": "npm run typecheck --workspace server",
     "sync:bank": "node server/src/scripts/sync-bank.ts"
   }
 }
