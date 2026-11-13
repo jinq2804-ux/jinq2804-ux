@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: essay-grader-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AI_MODE
+        value: deepseek
+      - key: AI_FALLBACK_TO_MOCK
+        value: "false"
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_BASE_URL
+        value: https://api.deepseek.com
+      - key: DEEPSEEK_MODEL
+        value: deepseek-flash
+      - key: OCR_PROVIDER
+        value: tencent
+      - key: TENCENT_SECRET_ID
+        sync: false
+      - key: TENCENT_SECRET_KEY
+        sync: false
+      - key: TENCENT_REGION
+        value: ap-guangzhou

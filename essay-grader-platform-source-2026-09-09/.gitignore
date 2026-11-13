@@ -1,0 +1,14 @@
+node_modules/
+dist/
+server/data/*.json
+server/data/*.bak-*
+!server/data/seed.json
+*.log
+.env
+.DS_Store
+client/dist/
+
+# pnpm store / misc
+.pnpm-store/
+*.tsbuildinfo
+

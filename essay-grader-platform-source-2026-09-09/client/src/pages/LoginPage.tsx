@@ -6,25 +6,30 @@ import { api, setSession } from '../api';
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('teacher@demo.com');
-  const [password, setPassword] = useState('123456');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(''); setLoading(true);
-    try {
-      const path = mode === 'login' ? '/auth/login' : '/auth/register';
-      const body = mode === 'login' ? { email, password } : { email, password, name };
-      const data = await api.post<{ token: string; user: unknown }>(path, body);
-      setSession(data.token, data.user);
+const submit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
+  try {
+    if (mode === 'login') {
+      const res = await api.post<{ token: string; user: unknown }>('/auth/login', { email, password });
+      setSession(res.token, res.user);
       navigate('/');
-    } catch (err) {
-      setError((err as Error).message);
-    } finally { setLoading(false); }
-  };
+    } else {
+      setError("演示版暂不支持注册");
+    }
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "请求失败");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fill = (mail: string, pwd: string) => { setEmail(mail); setPassword(pwd); setMode('login'); };
 
@@ -58,7 +63,15 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="label">密码</label>
-              <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === 'register' ? '至少 6 位' : '密码'} required />
+              <input
+                className="input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === 'register' ? '至少 6 位' : '请输入密码'}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                required
+              />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button className="btn-primary w-full py-2.5" disabled={loading}>

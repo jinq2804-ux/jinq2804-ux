@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
-import { getSessionUser, getToken } from './api';
+import { api, getSessionUser, getToken } from './api';
 import type { User } from './types';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -19,8 +19,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (getToken() && !getSessionUser()) {
       // token 存在但本地用户缺失时拉取一次
-      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${getToken()}` } })
-        .then((r) => r.json())
+      api.get<{ user: User }>('/auth/me')
         .then((d) => { if (d.user) localStorage.setItem('eg_user', JSON.stringify(d.user)); })
         .catch(() => undefined)
         .finally(() => setReady(true));

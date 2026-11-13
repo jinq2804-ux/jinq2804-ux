@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Download, Search, Eye } from 'lucide-react';
-import { api, fmtDate, getToken } from '../api';
+import { API_BASE, api, fmtDate, getToken } from '../api';
 import type { ClassRoom, Question, Correction } from '../types';
 import { Card, Badge, Spinner, Empty, Modal, Alert } from '../components/ui';
 import ColoredEssay, { MARK_COLOR_LABEL } from '../components/ColoredEssay';
@@ -58,7 +58,11 @@ export default function HistoryPage() {
     if (classId) qs.set('classId', classId);
     if (questionId) qs.set('questionId', questionId);
     if (tag) qs.set('tag', tag);
-    const res = await fetch(`/api/corrections/export.csv?${qs.toString()}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    const res = await fetch(`${API_BASE}/corrections/export.csv?${qs.toString()}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      throw new Error(data.error || `导出失败(${res.status})`);
+    }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

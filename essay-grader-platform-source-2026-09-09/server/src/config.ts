@@ -14,6 +14,11 @@ export const config = {
   aiMode: (process.env.AI_MODE || 'auto') as 'auto' | 'mock' | 'deepseek',
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
   deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
-  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-flash',
+  aiFallbackToMock: process.env.AI_FALLBACK_TO_MOCK === 'true',
   enableWebSearch: process.env.ENABLE_WEB_SEARCH === 'true',
+  ocrProvider: (process.env.OCR_PROVIDER || 'auto') as 'auto' | 'tencent' | 'windows',
+  tencentSecretId: process.env.TENCENT_SECRET_ID || process.env.OCR_TENCENT_SECRET_ID || '',
+  tencentSecretKey: process.env.TENCENT_SECRET_KEY || process.env.OCR_TENCENT_SECRET_KEY || '',
+  tencentRegion: process.env.TENCENT_REGION || 'ap-guangzhou',
 };

@@ -5,7 +5,7 @@
 
 > 演示说明：本机无 PostgreSQL / DeepSeek Key 时，默认使用 **JSON 文件存储** +
 > **内置演示 AI（mock）**，开箱即用；配置 `DEEPSEEK_API_KEY` 后自动切换真实
-> DeepSeek 模型（AI 适配器为可插拔设计，任一调用失败自动回退演示模式）。
+> DeepSeek 模型。生产环境默认不在失败后偷偷回退演示结果，以免把低质量模板误当成真实 AI；如确需演示回退，可设置 `AI_FALLBACK_TO_MOCK=true`。
 
 ---
 
@@ -15,7 +15,8 @@
 | --- | --- |
 | 登录 / 注册 | 邮箱 + 密码，JWT 鉴权，teacher / admin 两种角色 |
 | 智能出题中心 | 省份/年级/话题关键词/思辨类型 → 材料作文题 + 评分细则 + 偏题陷阱；保存草稿 / 发布 / 一键复制 |
-| 批改工作台（核心） | 左栏题目 + 作文粘贴 + **语音输入**（Web Speech API）；右栏四 Tab：骨架 / 逻辑链 / 论据核查 / 评分评语（雷达图 + 三段式评语 + 置信度标注）；教师可编辑后**保存入库** |
+| 批改工作台（核心） | 支持文字、语音与**整张答题卡图片**；自动裁切作文三栏并调用手写 OCR；AI 按四个固定区间先判档再定分，教师可编辑后**保存入库** |
+| 人工样本校准 | 内置本次提供的 74 篇教师核定作文；仅在匹配“突围与成长”题目时启用，避免跨题误用；高度相似原文优先采用教师核定分 |
 | 写作框架辅助 | 立意三梯度 + 论证大纲（并列/递进）+ 素材推荐表（知识库/联网） |
 | 班级管理（含子功能） | 班级与学生（创建/导入/学生列表）、班级学情报告、错题本与个性化 |
 | 批改历史与检索 | 按班级/学生/题目/错误标签/时间筛选；导出 CSV（Excel 可打开） |
@@ -80,8 +81,14 @@ $env:ENABLE_WEB_SEARCH="true"   # 出题/素材时启用联网检索（按模型
 node server/src/index.ts
 ```
 
-`server/src/ai/` 目录：`index.ts`（工厂+自动回退）→ `deepseek.ts`（真实 API，JSON 输出）
+`server/src/ai/` 目录：`index.ts`（提供方选择）→ `deepseek.ts`（真实 API，JSON 输出）
 / `mock.ts`（演示模式，含启发式骨架/逻辑/论据/评分分析）。
+
+## 整张答题卡识别
+
+Render 环境变量需设置 `OCR_PROVIDER=tencent`、`TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 和 `TENCENT_REGION=ap-guangzhou`。前端会先排除题干、姓名、条码与红色教师标记，再按左、中、右三栏提交腾讯云手写体 OCR。识别结果进入可编辑文本框，批改前应人工快速校对。
+
+完整部署步骤见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
 ## 重置演示数据
 
@@ -107,7 +114,7 @@ docker compose up --build
 
 ```text
 server/            Express + TS API（auth/questions/corrections/scaffold/classes/reports/students/materials/plagiarism）
-  src/ai/          AI 适配器（deepseek / mock，可插拔，自动回退）
+  src/ai/          AI 适配器（deepseek / mock，可插拔；生产默认不自动回退）
   src/db/          JSON 存储层 + 种子数据
 client/            React 18 + TS + Tailwind 前端（pages/components/lib）
 db/schema.sql      PostgreSQL 完整 ERD（与需求文档一致）

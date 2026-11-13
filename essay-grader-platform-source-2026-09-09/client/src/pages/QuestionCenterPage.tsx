@@ -4,8 +4,8 @@ import {
   Loader2, Sparkles, Search, BookOpen, PencilLine, Library, Save, Send, Copy,
   Download, Upload, Eye, Trash2, Pin, Wand2, CheckCircle2,
 } from 'lucide-react';
-import { api, fmtDate } from '../api';
-import type { Question } from '../types';
+import { api, fmtDate, getSessionUser } from '../api';
+import type { Question, User } from '../types';
 import { Card, Badge, Modal, Alert, Empty, Spinner } from '../components/ui';
 
 const TYPE_LABEL: Record<string, string> = { progressive: '逻辑递进型', dialectical: '关系辩证型', metaphoric: '比喻象征型' };
@@ -20,6 +20,21 @@ const EMPTY_Q = (): Question => ({
   checklist: [], thinkingType: 'dialectical', difficulty: 'medium', province: '', grade: '',
   traps: [], published: false, source: 'ai_generated', createdAt: new Date().toISOString(),
 });
+
+const questionList = (r: Question[] | { questions: Question[] }): Question[] => Array.isArray(r) ? r : r.questions;
+const savedQuestion = (r: Question | { question: Question }): Question => 'question' in r ? r.question : r;
+const teacherId = () => getSessionUser<User>()?.id || 'u-teacher-1';
+
+async function persistQuestion(draft: Question, published: boolean): Promise<Question> {
+  const { id: _id, ...rest } = draft;
+  const r = await api.post<Question | { question: Question }>('/questions', {
+    ...rest,
+    teacherId: teacherId(),
+    published,
+    createdAt: new Date().toISOString(),
+  });
+  return savedQuestion(r);
+}
 
 export default function QuestionCenterPage() {
   const [tab, setTab] = useState<Tab>('search');
@@ -128,8 +143,8 @@ function ImitateModal({ q, onClose, onFlash, onError }: { q: Question; onClose: 
   const save = async (publish: boolean) => {
     if (!draft) return;
     try {
-      const r = await api.post<{ question: Question }>('/questions', { ...draft, published: publish });
-      onFlash(publish ? '已发布「' + r.question.title + '」' : '已存入我的题库：' + r.question.title);
+      const q = await persistQuestion(draft, publish);
+      onFlash(publish ? '已发布「' + q.title + '」' : '已存入我的题库：' + q.title);
       setDraft(null);
     } catch (e) { onError((e as Error).message); }
   };
@@ -251,10 +266,15 @@ function BankSearchTab({ onFlash, onError }: { onFlash: (s: string) => void; onE
   const [pickOpen, setPickOpen] = useState(false);
 
   const loadMeta = async (prov = '') => {
-    const qs = prov ? `?province=${encodeURIComponent(prov)}` : '';
     try {
-      const r = await api.get<{ meta: Meta }>(`/questions/meta${qs}`);
-      setMeta(r.meta);
+      const r = await api.get<Question[] | { questions: Question[] }>('/questions');
+      const all = questionList(r);
+      const scoped = prov ? all.filter((q) => q.province === prov) : all;
+      setMeta({
+        provinces: [...new Set(all.map((q) => q.province).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-CN')),
+        years: [...new Set(scoped.map((q) => q.year).filter(Boolean) as string[])].sort((a, b) => Number(b) - Number(a)),
+        examCategories: [...new Set(scoped.map((q) => q.examCategory).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'zh-CN')),
+      });
     } catch { /* 忽略，保留旧 meta */ }
   };
   useEffect(() => { loadMeta(); }, []);
@@ -272,24 +292,26 @@ function BankSearchTab({ onFlash, onError }: { onFlash: (s: string) => void; onE
   const search = async (): Promise<Question[]> => {
     setSearching(true);
     try {
-      const p = new URLSearchParams();
-      if (province !== '全部') p.set('province', province);
-      if (year !== '全部') p.set('year', year);
-      if (showExamCategory && examCategory !== '全部') p.set('examCategory', examCategory);
-      if (showTopic) {
-        if (keyword.trim()) p.set('keyword', keyword.trim());
-        if (thinkingType) p.set('thinkingType', thinkingType);
+      const r = await api.get<Question[] | { questions: Question[] }>('/questions');
+      let list = questionList(r).filter((q) => q.bank === 'gaokao' || q.bank === 'mock');
+      if (province !== '全部') list = list.filter((q) => q.province === province);
+      if (year !== '全部') list = list.filter((q) => String(q.year) === year);
+      if (showExamCategory && examCategory !== '全部') list = list.filter((q) => q.examCategory === examCategory);
+      if (showTopic && keyword.trim()) {
+        const kw = keyword.trim();
+        list = list.filter((q) => `${q.title}${q.materialText}${q.keyword || ''}`.includes(kw));
       }
-      const r = await api.get<{ questions: Question[] }>(`/questions/bank?${p.toString()}`);
-      setResults(r.questions);
-      return r.questions;
+      if (showTopic && thinkingType && thinkingType !== 'free') list = list.filter((q) => q.thinkingType === thinkingType);
+      list.sort((a, b) => String(b.year || '').localeCompare(String(a.year || '')) || a.title.localeCompare(b.title, 'zh-CN'));
+      setResults(list);
+      return list;
     } catch (e) { onError((e as Error).message); return []; } finally { setSearching(false); }
   };
 
   const saveToMine = async (q: Question) => {
     try {
-      const r = await api.post<{ question: Question }>(`/questions/${q.id}/save`);
-      onFlash(`已保存「${r.question.title}」到我的题库`);
+      const copy = await persistQuestion({ ...q, id: '', bank: undefined, source: 'manual' }, false);
+      onFlash(`已保存「${copy.title}」到我的题库`);
     } catch (e) { onError((e as Error).message); }
   };
 
@@ -412,8 +434,8 @@ function CustomGenerateTab({ onFlash, onError }: { onFlash: (s: string) => void;
   const save = async (publish: boolean) => {
     if (!draft) return;
     try {
-      const r = await api.post<{ question: Question }>('/questions', { ...draft, published: publish });
-      onFlash(publish ? '已发布「' + r.question.title + '」' : '已保存到我的题库');
+      const q = await persistQuestion(draft, publish);
+      onFlash(publish ? '已发布「' + q.title + '」' : '已保存到我的题库');
       setDraft(null);
     } catch (e) { onError((e as Error).message); }
   };
@@ -495,8 +517,11 @@ function MyBankTab({ onFlash, onError }: { onFlash: (s: string) => void; onError
 
   const load = useCallback(async () => {
     try {
-      const r = await api.get<{ questions: Question[] }>('/questions/my');
-      setQuestions(r.questions);
+      const r = await api.get<Question[] | { questions: Question[] }>('/questions');
+      const mine = questionList(r)
+        .filter((q) => q.teacherId === teacherId() && !q.bank)
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      setQuestions(mine);
     } catch (e) { onError((e as Error).message); } finally { setLoading(false); }
   }, [onError]);
   useEffect(() => { load(); }, [load]);
@@ -535,8 +560,17 @@ function MyBankTab({ onFlash, onError }: { onFlash: (s: string) => void; onError
     setImporting(true); setResultMsg('');
     try {
       const arr = JSON.parse(importText);
-      const r = await api.post<{ added: Question[]; errors: string[]; count: number }>('/questions/import', { questions: Array.isArray(arr) ? arr : [arr] });
-      setResultMsg(r.errors.length ? `导入成功 ${r.count} 条；${r.errors.join('；')}` : `导入成功 ${r.count} 条 ✓`);
+      const rows = Array.isArray(arr) ? arr : [arr];
+      const valid = rows.filter((q) => q?.title && (q?.materialText || q?.material) && (q?.requirementText || q?.requirement));
+      const errors = rows.length - valid.length;
+      await Promise.all(valid.map((q) => persistQuestion({
+        ...EMPTY_Q(),
+        ...q,
+        materialText: q.materialText || q.material,
+        requirementText: q.requirementText || q.requirement,
+        source: 'imported',
+      }, Boolean(q.published))));
+      setResultMsg(errors ? `导入成功 ${valid.length} 条；${errors} 条缺少标题、材料或要求` : `导入成功 ${valid.length} 条 ✓`);
       setImportText('');
       await load();
     } catch (e) { setResultMsg(`导入失败：${(e as Error).message}`); } finally { setImporting(false); }

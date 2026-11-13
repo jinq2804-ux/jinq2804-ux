@@ -29,6 +29,16 @@ export interface QuestionDraft {
 export interface CorrectInput {
   question?: { id?: string; title?: string; materialText?: string } | null;
   essay: string;
+  scoreAnchors?: ScoreAnchor[];
+}
+
+export interface ScoreAnchor {
+  id: string;
+  band: string;
+  score: number;
+  title: string;
+  excerpt: string;
+  similarity: number;
 }
 
 export interface ScaffoldInput {

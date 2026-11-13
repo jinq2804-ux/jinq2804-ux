@@ -4,6 +4,7 @@ import { authRequired, ah } from '../middleware/auth.ts';
 import { ai } from '../ai/index.ts';
 import type { Correction, CorrectionAI } from '../types.ts';
 import { ensurePigai, syncEstimateToScore, alignMarksToEssay } from '../ai/pigai.ts';
+import { calibrateScore, selectScoreAnchors } from '../ai/calibration.ts';
 
 const router = Router();
 router.use(authRequired);
@@ -42,7 +43,16 @@ router.post('/analyze', ah(async (req, res) => {
   if (essay.length < 40) return void res.status(400).json({ error: '作文内容过短，请粘贴完整作文（至少 40 字）' });
   const questionText = String(b.questionText || '').trim();
   const question = b.questionId ? db.byId('questions', String(b.questionId)) : questionText ? { id: '', title: '手动录入题目（文字/图片导入）', materialText: questionText } : undefined;
-  const aiResponse = await ai.correctEssay({ question: question ? { id: question.id, title: question.title, materialText: question.materialText } : null, essay });
+  const calibrationSelection = selectScoreAnchors(
+    question ? `${question.title || ''}\n${question.materialText || ''}` : questionText,
+    essay,
+  );
+  const aiResponse = await ai.correctEssay({
+    question: question ? { id: question.id, title: question.title, materialText: question.materialText } : null,
+    essay,
+    scoreAnchors: calibrationSelection.applied ? calibrationSelection.anchors : undefined,
+  });
+  const calibration = calibrateScore(aiResponse, calibrationSelection);
   const lengthInfo = applyLengthPenalty(aiResponse, essay);
   aiResponse.pigai = ensurePigai(aiResponse);
   syncEstimateToScore(aiResponse);
@@ -50,7 +60,7 @@ router.post('/analyze', ah(async (req, res) => {
   res.json({
     analysis: aiResponse,
     question: question || null,
-    metrics: { lengthInfo },
+    metrics: { lengthInfo, calibration },
   });
 }));
 

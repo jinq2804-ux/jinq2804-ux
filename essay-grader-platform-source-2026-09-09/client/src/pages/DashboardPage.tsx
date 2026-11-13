@@ -18,16 +18,25 @@ export default function DashboardPage() {
     (async () => {
       try {
         const [cRes, qRes, coRes] = await Promise.all([
-          api.get<{ classes: ClassRoom[] }>('/classes'),
-          api.get<{ questions: Question[] }>('/questions?published=true'),
-          api.get<{ corrections: Correction[] }>('/corrections'),
+          api.get<ClassRoom[] | { classes: ClassRoom[] }>('/classes'),
+          api.get<Question[] | { questions: Question[] }>('/questions?published=true'),
+          api.get<Correction[] | { corrections: Correction[] }>('/corrections'),
         ]);
-        setClasses(cRes.classes); setQuestions(qRes.questions.slice(0, 4)); setCorrections(coRes.corrections.slice(0, 6));
-        if (cRes.classes[0]) {
-          const rep = await api.get<{ report: { weaknessTop: typeof weakTop; avgScore: number; clips: HighlightClip[] } }>(`/reports/classes/${cRes.classes[0].id}/report`);
-          setWeakTop(rep.report.weaknessTop.slice(0, 3));
-          setAvg(rep.report.avgScore);
-          setClips(rep.report.clips.filter((c) => c.isPinned).slice(0, 3));
+        const classList = Array.isArray(cRes) ? cRes : cRes.classes;
+        const questionList = Array.isArray(qRes) ? qRes : qRes.questions;
+        const correctionList = Array.isArray(coRes) ? coRes : coRes.corrections;
+        setClasses(classList);
+        setQuestions(questionList.slice(0, 4));
+        setCorrections(correctionList.slice(0, 6));
+        if (classList[0]) {
+          try {
+            const rep = await api.get<{ report: { weaknessTop: typeof weakTop; avgScore: number; clips: HighlightClip[] } }>(`/reports/classes/${classList[0].id}/report`);
+            setWeakTop(rep.report.weaknessTop.slice(0, 3));
+            setAvg(rep.report.avgScore);
+            setClips(rep.report.clips.filter((c) => c.isPinned).slice(0, 3));
+          } catch {
+            // 报告暂不可用时，首页仍显示已加载的基础数据。
+          }
         }
       } catch (e) { console.error(e); } finally { setLoading(false); }
     })();
@@ -46,9 +55,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <Stat label="班级数" value={classes.length} />
         <Stat label="学生总数" value={studentCount} />
-        <Stat label="已批改作文" value={corrections.length + 4} sub="含历史记录" />
+        <Stat label="已批改作文" value={corrections.length} sub="当前账户记录" />
         <Stat label="班级平均分" value={avg || '—'} tone="text-brand-700" />
-        <Stat label="已发布题目" value={questions.length} sub="仅演示种子" />
+        <Stat label="已发布题目" value={questions.length} sub="题库已发布" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
@@ -135,4 +144,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

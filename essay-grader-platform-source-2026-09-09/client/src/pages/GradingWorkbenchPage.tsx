@@ -6,6 +6,18 @@ import type { Question, ClassRoom, Student, Correction, AIResponse, PigaiMark } 
 import { Card, Badge, Empty, Alert, Modal } from '../components/ui';
 import ColoredEssay, { PigaiLegend, MARK_COLOR_LABEL } from '../components/ColoredEssay';
 
+interface AnalysisMetrics {
+  lengthInfo: { chars: number; count: number; shortage: number; penalty: number };
+  calibration?: {
+    applied: boolean;
+    reason: string;
+    rawScore: number;
+    calibratedScore: number;
+    confidence?: 'high' | 'medium' | 'reference';
+    anchors: { id: string; band: string; score: number; similarity: number }[];
+  };
+}
+
 export default function GradingWorkbenchPage() {
   const [params] = useSearchParams();
   const initQid = params.get('question') || '';
@@ -33,7 +45,7 @@ export default function GradingWorkbenchPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [analysis, setAnalysis] = useState<AIResponse | null>(null);
-  const [metrics, setMetrics] = useState<{ lengthInfo: { chars: number; count: number; shortage: number; penalty: number } } | null>(null);
+  const [metrics, setMetrics] = useState<AnalysisMetrics | null>(null);
   const [finalScore, setFinalScore] = useState(0);
   const [comment, setComment] = useState('');
   const [verified, setVerified] = useState(false);
@@ -62,7 +74,7 @@ export default function GradingWorkbenchPage() {
     if (!questionId) { setError('请先选择题目'); return; }
     setError('');
     const r = await api.get<{ corrections: Correction[] }>(`/corrections?questionId=${questionId}`);
-    if (!r.corrections.length) { setError('该题目暂无示例范文（演示模式仅内置 q-1/q-2 两篇）'); return; }
+    if (!r.corrections.length) { setError('该题目暂无历史作文记录'); return; }
     const c = r.corrections.find((x) => x.originalText.length > 300) || r.corrections[0];
     setEssay(c.originalText);
     if (c.studentId) { setStudentId(c.studentId); setClassId(c.className ? classes.find((k) => k.name === c.className)?.id || classId : classId); }
@@ -75,7 +87,7 @@ export default function GradingWorkbenchPage() {
     if (!essay.trim()) { setError('请先输入作文正文（文字粘贴/语音/图片导入均可）'); return; }
     setAnalyzing(true);
     try {
-      const r = await api.post<{ analysis: AIResponse; question: Question | null; metrics: { lengthInfo: { chars: number; count: number; shortage: number; penalty: number } } }>('/corrections/analyze', {
+      const r = await api.post<{ analysis: AIResponse; question: Question | null; metrics: AnalysisMetrics }>('/corrections/analyze', {
         questionId: questionId || undefined,
         questionText: !questionId && questionText.trim() ? questionText.trim() : undefined,
         essay,
@@ -239,7 +251,7 @@ export default function GradingWorkbenchPage() {
               </>
             ) : (
               <div className="p-4 space-y-2">
-                <OcrPanel image={eImg} setImage={setEImg} busy={eOcr} setBusy={setEOcr} onResult={(t) => setEssay((p) => (p ? p + '\n' + t : t))} onError={setError} />
+                <OcrPanel answerSheet image={eImg} setImage={setEImg} busy={eOcr} setBusy={setEOcr} onResult={(t) => setEssay(t)} onError={setError} />
                 <textarea className="input min-h-[240px]" placeholder="识别出的作文正文将显示在这里，可修改后点击 AI 批改…" value={essay} onChange={(e) => setEssay(e.target.value)} />
               </div>
             )}
@@ -285,6 +297,14 @@ export default function GradingWorkbenchPage() {
                     {metrics?.lengthInfo && metrics.lengthInfo.penalty > 0 && (
                       <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-3">
                         ⚠ 字数扣分：全文约 {metrics.lengthInfo.count} 字，少于 800 字（缺 {metrics.lengthInfo.shortage} 字），已按规则额外扣 {metrics.lengthInfo.penalty} 分并计入主估。
+                      </p>
+                    )}
+                    {metrics?.calibration?.applied && (
+                      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mt-3">
+                        ✓ 人工样本校准：已用同题教师核定样本执行“先判区间、再区间内定分”
+                        {metrics.calibration.rawScore !== metrics.calibration.calibratedScore
+                          ? `（AI 原始 ${metrics.calibration.rawScore} 分，校准为 ${metrics.calibration.calibratedScore} 分）`
+                          : `（校准后维持 ${metrics.calibration.calibratedScore} 分）`}。
                       </p>
                     )}
                     {(analysis.pigai.estimate.floorReasons.length > 0 || analysis.pigai.estimate.nextBandGaps.length > 0) && (
@@ -404,9 +424,58 @@ function ModeTabs<T extends string>({ options, value, onChange, size = 'md' }: {
   );
 }
 
-function OcrPanel({ image, setImage, busy, setBusy, onResult, onError }: {
+async function prepareAnswerSheet(dataUrl: string): Promise<string[]> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const element = new Image();
+    element.onload = () => resolve(element);
+    element.onerror = () => reject(new Error('无法解析答题卡图片'));
+    element.src = dataUrl;
+  });
+  const normalized = document.createElement('canvas');
+  const portrait = image.naturalHeight > image.naturalWidth;
+  normalized.width = portrait ? image.naturalHeight : image.naturalWidth;
+  normalized.height = portrait ? image.naturalWidth : image.naturalHeight;
+  const normalizedCtx = normalized.getContext('2d');
+  if (!normalizedCtx) throw new Error('浏览器无法处理答题卡图片');
+  if (portrait) {
+    normalizedCtx.translate(normalized.width, 0);
+    normalizedCtx.rotate(Math.PI / 2);
+  }
+  normalizedCtx.drawImage(image, 0, 0);
+
+  const regions = [
+    { x: 0.045, y: 0.335, width: 0.30, height: 0.595 },
+    { x: 0.355, y: 0.060, width: 0.30, height: 0.870 },
+    { x: 0.665, y: 0.060, width: 0.30, height: 0.870 },
+  ];
+  return regions.map((region) => {
+    const sx = Math.round(normalized.width * region.x);
+    const sy = Math.round(normalized.height * region.y);
+    const sw = Math.round(normalized.width * region.width);
+    const sh = Math.round(normalized.height * region.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = sw;
+    canvas.height = sh;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('浏览器无法裁切答题卡作文区域');
+    ctx.drawImage(normalized, sx, sy, sw, sh, 0, 0, sw, sh);
+    const pixels = ctx.getImageData(0, 0, sw, sh);
+    for (let i = 0; i < pixels.data.length; i += 4) {
+      const red = pixels.data[i];
+      const green = pixels.data[i + 1];
+      const blue = pixels.data[i + 2];
+      if (red > 130 && red > green * 1.28 && red > blue * 1.28) {
+        pixels.data[i] = 255; pixels.data[i + 1] = 255; pixels.data[i + 2] = 255;
+      }
+    }
+    ctx.putImageData(pixels, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  });
+}
+
+function OcrPanel({ image, setImage, busy, setBusy, onResult, onError, answerSheet = false }: {
   image: string; setImage: (v: string) => void; busy: boolean; setBusy: (v: boolean) => void;
-  onResult: (text: string) => void; onError: (msg: string) => void;
+  onResult: (text: string) => void; onError: (msg: string) => void; answerSheet?: boolean;
 }) {
   const upRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
@@ -421,7 +490,8 @@ function OcrPanel({ image, setImage, busy, setBusy, onResult, onError }: {
     setImage(dataUrl);
     setBusy(true);
     try {
-      const r = await api.post<{ text: string }>('/ocr', { image: dataUrl });
+      const regions = answerSheet ? await prepareAnswerSheet(dataUrl) : null;
+      const r = await api.post<{ text: string; provider?: string }>('/ocr', regions ? { images: regions, mode: 'answer-sheet' } : { image: dataUrl });
       if (r.text.trim()) onResult(r.text.trim());
       else onError('未从图片中识别到文字，请换一张更清晰的图片');
     } catch (e) { onError((e as Error).message); } finally { setBusy(false); }
@@ -429,7 +499,7 @@ function OcrPanel({ image, setImage, busy, setBusy, onResult, onError }: {
   return (
     <div className="space-y-2">
       <div className="flex gap-1.5 flex-wrap">
-        <button type="button" onClick={() => upRef.current?.click()} className="btn-outline text-xs"><ImagePlus className="w-3.5 h-3.5" /> 选择图片上传</button>
+        <button type="button" onClick={() => upRef.current?.click()} className="btn-outline text-xs"><ImagePlus className="w-3.5 h-3.5" /> {answerSheet ? '选择整张答题卡' : '选择图片上传'}</button>
         <button type="button" onClick={() => camRef.current?.click()} className="btn-outline text-xs"><Camera className="w-3.5 h-3.5" /> 拍照上传</button>
       </div>
       <input ref={upRef} type="file" accept="image/*" className="hidden" onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ''; }} />
@@ -438,11 +508,11 @@ function OcrPanel({ image, setImage, busy, setBusy, onResult, onError }: {
         <div className="flex gap-3 items-start">
           <img src={image} alt="待识别图片" className="max-h-32 rounded-lg border border-slate-200" />
           <div className="text-xs text-slate-500 space-y-1.5">
-            {busy ? <p className="flex items-center gap-1 text-brand-600"><Loader2 className="w-3.5 h-3.5 animate-spin" /> 正在识别图片文字…</p> : <p>已选图片，识别文字见下方输入框（可修改）。</p>}
+            {busy ? <p className="flex items-center gap-1 text-brand-600"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {answerSheet ? '正在按左、中、右三栏识别手写作文…' : '正在识别图片文字…'}</p> : <p>已选图片，识别文字见下方输入框（可修改）。</p>}
           </div>
         </div>
       )}
-      {!image && <p className="text-xs text-slate-400">支持 JPG / PNG / WebP，选择后将自动识别图片中的中文文字并填入下方输入框。</p>}
+      {!image && <p className="text-xs text-slate-400">{answerSheet ? '支持完整横向答题卡：自动排除题干、姓名、条码与红色分数，按左→中→右顺序识别作文；识别后请先人工校对。' : '支持 JPG / PNG / WebP，选择后将自动识别图片中的中文文字并填入下方输入框。'}</p>}
     </div>
   );
 }
